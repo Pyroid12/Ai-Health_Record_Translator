@@ -1,41 +1,31 @@
-import { useContext } from 'react';
-import AuthContext from '../context/AuthContext';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import ProfileSection from '../components/dashboard/ProfileSection';
+import UploadCard from '../components/dashboard/UploadCard';
+import RecentReportsCard from '../components/dashboard/RecentReportsCard';
 
 const Dashboard = () => {
-  const { user, logout } = useContext(AuthContext);
-
   return (
-    <div className="min-h-screen bg-gray-100">
-      <nav className="bg-white shadow-sm">
-        <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold text-indigo-600">AI Health Translator</h1>
-            </div>
-            <div className="flex items-center">
-              <span className="mr-4 text-gray-700">Welcome, {user?.name}</span>
-              <button
-                onClick={logout}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+    <DashboardLayout>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">Overview</h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Welcome back! Here's a summary of your medical translations.
+        </p>
+      </div>
 
-      <main className="py-10">
-        <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
-          <div className="p-6 bg-white rounded-lg shadow">
-            <h2 className="text-lg font-medium text-gray-900">Dashboard</h2>
-            <p className="mt-1 text-sm text-gray-500">
-              Your uploaded reports will appear here in the next phases.
-            </p>
-          </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Left Column - Profile & Stats */}
+        <div className="space-y-6 lg:col-span-1">
+          <ProfileSection />
         </div>
-      </main>
-    </div>
+
+        {/* Right Column - Actions & History */}
+        <div className="space-y-6 lg:col-span-2">
+          <UploadCard />
+          <RecentReportsCard />
+        </div>
+      </div>
+    </DashboardLayout>
   );
 };
 
