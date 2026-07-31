@@ -42,3 +42,36 @@ ${ocrText}
     throw new Error('Failed to generate summary from AI');
   }
 };
+
+/**
+ * Translate an English summary to a target regional language
+ * @param {string} englishSummary - The original English summary
+ * @param {string} targetLanguage - The language to translate to
+ * @returns {Promise<string>} - The translated summary
+ */
+export const translateSummary = async (englishSummary, targetLanguage) => {
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro-latest' });
+
+    const prompt = `
+You are an expert medical translator. Translate the following medical report summary into ${targetLanguage}.
+CRITICAL INSTRUCTIONS:
+1. Translate the conversational and explanatory text into easy-to-understand ${targetLanguage}.
+2. Keep specific medical terms, test names, and metrics in English (or append the English term in brackets) to avoid confusion.
+3. Maintain the exact same markdown structure and headings as the original.
+4. Ensure the Medical Disclaimer is strongly translated and emphasizes that this is not a diagnosis.
+
+Original Summary:
+"""
+${englishSummary}
+"""
+    `;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text();
+  } catch (error) {
+    console.error('Gemini Translation Error:', error);
+    throw new Error('Failed to translate summary');
+  }
+};

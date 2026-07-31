@@ -2,7 +2,7 @@ import cloudinary from '../config/cloudinary.js';
 import Report from '../models/Report.js';
 import fs from 'fs';
 import { extractText } from '../services/ocrService.js';
-import { generateSummary } from '../services/geminiService.js';
+import { generateSummary, translateSummary } from '../services/geminiService.js';
 
 // @desc    Upload a report
 // @route   POST /api/reports/upload
@@ -50,5 +50,55 @@ export const uploadReport = async (req, res) => {
     }
     console.error('Upload Error:', error);
     res.status(500).json({ message: error.message || 'File upload failed' });
+  }
+};
+
+// @desc    Translate a report summary
+// @route   POST /api/reports/:id/translate
+// @access  Private
+export const translateReport = async (req, res) => {
+  try {
+    const { targetLanguage } = req.body;
+    const report = await Report.findById(req.params.id);
+
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+
+    // Check if translation already exists in DB
+    if (report.translatedSummary && report.translatedSummary.has(targetLanguage)) {
+      return res.json({
+        message: 'Translation retrieved from database',
+        translation: report.translatedSummary.get(targetLanguage),
+      });
+    }
+
+    // If English is requested, just return the original summary
+    if (targetLanguage === 'English') {
+      return res.json({
+        message: 'Original English summary',
+        translation: report.summary,
+      });
+    }
+
+    // Generate translation via Gemini
+    const translation = await translateSummary(report.summary, targetLanguage);
+
+    // Initialize map if undefined
+    if (!report.translatedSummary) {
+      report.translatedSummary = new Map();
+    }
+    
+    // Save translation to MongoDB Map
+    report.translatedSummary.set(targetLanguage, translation);
+    await report.save();
+
+    res.json({
+      message: 'Translation successful',
+      translation,
+    });
+  } catch (error) {
+    console.error('Translate Error:', error);
+    res.status(500).json({ message: 'Translation failed' });
   }
 };

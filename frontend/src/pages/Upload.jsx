@@ -12,6 +12,9 @@ const Upload = () => {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [extractedText, setExtractedText] = useState('');
   const [summary, setSummary] = useState('');
+  const [reportId, setReportId] = useState(null);
+  const [language, setLanguage] = useState('English');
+  const [translating, setTranslating] = useState(false);
   const { user } = useContext(AuthContext);
 
   const handleFileChange = (e) => {
@@ -61,6 +64,8 @@ const Upload = () => {
     setMessage({ type: '', text: '' });
     setExtractedText('');
     setSummary('');
+    setReportId(null);
+    setLanguage('English');
 
     const formData = new FormData();
     formData.append('report', file);
@@ -76,6 +81,7 @@ const Upload = () => {
 
       setMessage({ type: 'success', text: res.data.message });
       if (res.data.report) {
+        setReportId(res.data.report._id);
         if (res.data.report.ocrText) setExtractedText(res.data.report.ocrText);
         if (res.data.report.summary) setSummary(res.data.report.summary);
       }
@@ -88,6 +94,33 @@ const Upload = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTranslate = async (e) => {
+    const selectedLang = e.target.value;
+    setLanguage(selectedLang);
+    
+    if (!reportId) return;
+
+    setTranslating(true);
+    try {
+      const token = JSON.parse(localStorage.getItem('user'))?.token;
+      const res = await axios.post(
+        `http://localhost:5000/api/reports/${reportId}/translate`,
+        { targetLanguage: selectedLang },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setSummary(res.data.translation);
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: 'Failed to translate summary.',
+      });
+    } finally {
+      setTranslating(false);
     }
   };
 
@@ -166,9 +199,33 @@ const Upload = () => {
         </div>
 
         {summary && (
-          <div className="mt-8 bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">AI Summary & Explanation</h2>
-            <div className="prose prose-indigo max-w-none text-gray-800">
+          <div className="mt-8 bg-white p-8 rounded-2xl shadow-sm border border-gray-100 relative">
+            <div className="flex justify-between items-center mb-6 border-b pb-4">
+              <h2 className="text-xl font-bold text-gray-900">AI Summary & Explanation</h2>
+              <div className="flex items-center space-x-3">
+                <label className="text-sm font-medium text-gray-700">Language:</label>
+                <select
+                  value={language}
+                  onChange={handleTranslate}
+                  disabled={translating}
+                  className="block w-32 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                >
+                  <option value="English">English</option>
+                  <option value="Hindi">Hindi</option>
+                  <option value="Marathi">Marathi</option>
+                  <option value="Tamil">Tamil</option>
+                  <option value="Kannada">Kannada</option>
+                  <option value="Telugu">Telugu</option>
+                </select>
+                {translating && (
+                   <svg className="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                   </svg>
+                )}
+              </div>
+            </div>
+            <div className={`prose prose-indigo max-w-none text-gray-800 transition-opacity ${translating ? 'opacity-50' : 'opacity-100'}`}>
               <ReactMarkdown>{summary}</ReactMarkdown>
             </div>
           </div>
