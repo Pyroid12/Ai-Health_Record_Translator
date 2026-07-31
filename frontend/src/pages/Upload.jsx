@@ -3,7 +3,8 @@ import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
-import { UploadCloud, File, AlertCircle, CheckCircle, Download } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { UploadCloud, File, Download } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import AuthContext from '../context/AuthContext';
 
@@ -11,7 +12,6 @@ const Upload = () => {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState('');
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
   const [extractedText, setExtractedText] = useState('');
   const [summary, setSummary] = useState('');
   const [reportId, setReportId] = useState(null);
@@ -20,16 +20,17 @@ const Upload = () => {
   const { user } = useContext(AuthContext);
 
   const handleFileChange = (e) => {
-    setMessage({ type: '', text: '' });
     setExtractedText('');
     setSummary('');
+    setReportId(null);
+    setLanguage('English');
     const selectedFile = e.target.files[0];
     
     if (!selectedFile) return;
 
     // Validate size (10MB max)
     if (selectedFile.size > 10 * 1024 * 1024) {
-      setMessage({ type: 'error', text: 'File exceeds 10MB limit.' });
+      toast.error('File exceeds 10MB limit.');
       setFile(null);
       return;
     }
@@ -37,7 +38,7 @@ const Upload = () => {
     // Validate type
     const validTypes = ['image/jpeg', 'image/png', 'application/pdf'];
     if (!validTypes.includes(selectedFile.type)) {
-      setMessage({ type: 'error', text: 'Invalid file type. Only JPG, PNG, or PDF allowed.' });
+      toast.error('Invalid file type. Only JPG, PNG, or PDF allowed.');
       setFile(null);
       return;
     }
@@ -58,12 +59,11 @@ const Upload = () => {
 
   const handleUpload = async () => {
     if (!file) {
-      setMessage({ type: 'error', text: 'Please select a file first.' });
+      toast.error('Please select a file first.');
       return;
     }
 
     setLoading(true);
-    setMessage({ type: '', text: '' });
     setExtractedText('');
     setSummary('');
     setReportId(null);
@@ -81,7 +81,7 @@ const Upload = () => {
         },
       });
 
-      setMessage({ type: 'success', text: res.data.message });
+      toast.success(res.data.message);
       if (res.data.report) {
         setReportId(res.data.report._id);
         if (res.data.report.ocrText) setExtractedText(res.data.report.ocrText);
@@ -90,10 +90,7 @@ const Upload = () => {
       setFile(null);
       setPreview('');
     } catch (error) {
-      setMessage({
-        type: 'error',
-        text: error.response?.data?.message || 'Failed to upload file.',
-      });
+      toast.error(error.response?.data?.message || 'Failed to upload file.');
     } finally {
       setLoading(false);
     }
@@ -116,11 +113,9 @@ const Upload = () => {
         }
       );
       setSummary(res.data.translation);
+      toast.success(`Translated to ${selectedLang}`);
     } catch (error) {
-      setMessage({
-        type: 'error',
-        text: 'Failed to translate summary.',
-      });
+      toast.error('Failed to translate summary.');
     } finally {
       setTranslating(false);
     }
@@ -144,10 +139,11 @@ const Upload = () => {
       
       pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
       pdf.save(`Medical_Report_${language}.pdf`);
+      toast.success('PDF downloaded successfully');
     } catch (error) {
       if (header) header.classList.add('hidden');
       console.error('PDF Generation Error:', error);
-      setMessage({ type: 'error', text: 'Failed to generate PDF.' });
+      toast.error('Failed to generate PDF.');
     }
   };
 
@@ -155,21 +151,6 @@ const Upload = () => {
     <DashboardLayout>
       <div className="max-w-3xl mx-auto">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Upload Medical Report</h1>
-
-        {message.text && (
-          <div
-            className={`flex items-center p-4 mb-6 rounded-lg ${
-              message.type === 'error' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'
-            }`}
-          >
-            {message.type === 'error' ? (
-              <AlertCircle className="w-5 h-5 mr-2" />
-            ) : (
-              <CheckCircle className="w-5 h-5 mr-2" />
-            )}
-            {message.text}
-          </div>
-        )}
 
         <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
           <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-indigo-200 rounded-xl bg-indigo-50/50 hover:bg-indigo-50 transition-colors">

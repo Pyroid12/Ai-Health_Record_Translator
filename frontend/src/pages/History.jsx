@@ -1,7 +1,8 @@
 import { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { Search, Trash2, FileText, Eye, AlertCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { Search, Trash2, FileText, Eye } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import AuthContext from '../context/AuthContext';
 
@@ -9,7 +10,6 @@ const History = () => {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [message, setMessage] = useState('');
   const { user } = useContext(AuthContext);
 
   useEffect(() => {
@@ -25,7 +25,7 @@ const History = () => {
       setReports(res.data);
     } catch (error) {
       console.error(error);
-      setMessage('Failed to fetch reports.');
+      toast.error('Failed to fetch reports.');
     } finally {
       setLoading(false);
     }
@@ -40,9 +40,10 @@ const History = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       setReports(reports.filter(report => report._id !== id));
+      toast.success('Report deleted successfully');
     } catch (error) {
       console.error(error);
-      setMessage('Failed to delete report.');
+      toast.error('Failed to delete report.');
     }
   };
 
@@ -70,16 +71,27 @@ const History = () => {
           </div>
         </div>
 
-        {message && (
-          <div className="mb-4 p-4 text-red-700 bg-red-50 rounded-lg flex items-center">
-            <AlertCircle className="w-5 h-5 mr-2" />
-            {message}
-          </div>
-        )}
-
         {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+            <ul className="divide-y divide-gray-200">
+              {[1, 2, 3].map((skeleton) => (
+                <li key={skeleton} className="p-4">
+                  <div className="flex items-center justify-between animate-pulse">
+                    <div className="flex items-center flex-1">
+                      <div className="w-12 h-12 bg-gray-200 rounded-lg mr-4"></div>
+                      <div className="space-y-3 flex-1">
+                        <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                        <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+                      </div>
+                    </div>
+                    <div className="flex space-x-4">
+                      <div className="h-8 w-16 bg-gray-200 rounded"></div>
+                      <div className="h-8 w-16 bg-gray-200 rounded"></div>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
         ) : filteredReports.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">

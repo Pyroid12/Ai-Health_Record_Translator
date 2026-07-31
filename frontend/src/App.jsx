@@ -7,11 +7,13 @@ import Upload from './pages/Upload';
 import History from './pages/History';
 import ReportDetail from './pages/ReportDetail';
 import ProtectedRoute from './components/ProtectedRoute';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   return (
     <Router>
       <AuthProvider>
+        <Toaster position="top-right" />
         <Routes>
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />

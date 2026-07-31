@@ -4,6 +4,7 @@ import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import toast from 'react-hot-toast';
 import { ArrowLeft, Download, FileText } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import AuthContext from '../context/AuthContext';
@@ -28,7 +29,7 @@ const ReportDetail = () => {
         setReport(res.data);
         setDisplaySummary(res.data.summary);
       } catch (error) {
-        console.error('Failed to fetch report details', error);
+        toast.error('Failed to fetch report details');
         navigate('/dashboard/history');
       } finally {
         setLoading(false);
@@ -50,8 +51,9 @@ const ReportDetail = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setDisplaySummary(res.data.translation);
+      toast.success(`Translated to ${selectedLang}`);
     } catch (error) {
-      console.error('Translation failed', error);
+      toast.error('Translation failed');
     } finally {
       setTranslating(false);
     }
@@ -74,9 +76,10 @@ const ReportDetail = () => {
       
       pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
       pdf.save(`Medical_Report_${language}.pdf`);
+      toast.success('PDF downloaded successfully');
     } catch (error) {
       if (header) header.classList.add('hidden');
-      console.error('PDF Generation Error:', error);
+      toast.error('Failed to generate PDF');
     }
   };
 
