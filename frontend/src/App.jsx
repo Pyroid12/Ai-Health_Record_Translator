@@ -4,6 +4,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Upload from './pages/Upload';
+import History from './pages/History';
+import ReportDetail from './pages/ReportDetail';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -19,6 +21,8 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/dashboard/upload" element={<Upload />} />
+            <Route path="/dashboard/history" element={<History />} />
+            <Route path="/dashboard/history/:id" element={<ReportDetail />} />
           </Route>
 
           {/* Default redirect to login */}

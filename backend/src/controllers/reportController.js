@@ -102,3 +102,68 @@ export const translateReport = async (req, res) => {
     res.status(500).json({ message: 'Translation failed' });
   }
 };
+
+// @desc    Get all reports for the logged in user
+// @route   GET /api/reports
+// @access  Private
+export const getReports = async (req, res) => {
+  try {
+    const reports = await Report.find({ user: req.user.id }).sort({ createdAt: -1 });
+    res.json(reports);
+  } catch (error) {
+    console.error('Get Reports Error:', error);
+    res.status(500).json({ message: 'Failed to fetch reports' });
+  }
+};
+
+// @desc    Get a single report by ID
+// @route   GET /api/reports/:id
+// @access  Private
+export const getReportById = async (req, res) => {
+  try {
+    const report = await Report.findById(req.params.id);
+
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+
+    if (report.user.toString() !== req.user.id) {
+      return res.status(401).json({ message: 'Not authorized to access this report' });
+    }
+
+    res.json(report);
+  } catch (error) {
+    console.error('Get Report Error:', error);
+    res.status(500).json({ message: 'Failed to fetch report details' });
+  }
+};
+
+// @desc    Delete a report
+// @route   DELETE /api/reports/:id
+// @access  Private
+export const deleteReport = async (req, res) => {
+  try {
+    const report = await Report.findById(req.params.id);
+
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+
+    if (report.user.toString() !== req.user.id) {
+      return res.status(401).json({ message: 'Not authorized to delete this report' });
+    }
+
+    // Delete from Cloudinary
+    if (report.cloudinaryId) {
+      await cloudinary.uploader.destroy(report.cloudinaryId);
+    }
+
+    // Delete from DB
+    await report.deleteOne();
+
+    res.json({ message: 'Report removed' });
+  } catch (error) {
+    console.error('Delete Report Error:', error);
+    res.status(500).json({ message: 'Failed to delete report' });
+  }
+};
