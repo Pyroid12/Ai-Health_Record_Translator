@@ -2,6 +2,7 @@ import cloudinary from '../config/cloudinary.js';
 import Report from '../models/Report.js';
 import fs from 'fs';
 import { extractText } from '../services/ocrService.js';
+import { generateSummary } from '../services/geminiService.js';
 
 // @desc    Upload a report
 // @route   POST /api/reports/upload
@@ -21,8 +22,11 @@ export const uploadReport = async (req, res) => {
     // Remove file from local storage after successful upload
     fs.unlinkSync(req.file.path);
 
-    // Run OCR / Text Extraction
+    // Run OCR / Text Extraction based on MimeType
     const extractedText = await extractText(result.secure_url, req.file.mimetype);
+
+    // Generate AI Summary
+    const aiSummary = await generateSummary(extractedText);
 
     // Create Report in DB
     const report = await Report.create({
@@ -32,10 +36,11 @@ export const uploadReport = async (req, res) => {
       cloudinaryId: result.public_id,
       fileType: req.file.mimetype,
       ocrText: extractedText,
+      summary: aiSummary,
     });
 
     res.status(201).json({
-      message: 'File uploaded and text extracted successfully',
+      message: 'File uploaded, text extracted, and summarized successfully',
       report,
     });
   } catch (error) {

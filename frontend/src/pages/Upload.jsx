@@ -1,5 +1,6 @@
 import { useState, useContext } from 'react';
 import axios from 'axios';
+import ReactMarkdown from 'react-markdown';
 import { UploadCloud, File, AlertCircle, CheckCircle } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import AuthContext from '../context/AuthContext';
@@ -10,11 +11,13 @@ const Upload = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [extractedText, setExtractedText] = useState('');
+  const [summary, setSummary] = useState('');
   const { user } = useContext(AuthContext);
 
   const handleFileChange = (e) => {
     setMessage({ type: '', text: '' });
     setExtractedText('');
+    setSummary('');
     const selectedFile = e.target.files[0];
     
     if (!selectedFile) return;
@@ -57,6 +60,7 @@ const Upload = () => {
     setLoading(true);
     setMessage({ type: '', text: '' });
     setExtractedText('');
+    setSummary('');
 
     const formData = new FormData();
     formData.append('report', file);
@@ -71,8 +75,9 @@ const Upload = () => {
       });
 
       setMessage({ type: 'success', text: res.data.message });
-      if (res.data.report && res.data.report.ocrText) {
-        setExtractedText(res.data.report.ocrText);
+      if (res.data.report) {
+        if (res.data.report.ocrText) setExtractedText(res.data.report.ocrText);
+        if (res.data.report.summary) setSummary(res.data.report.summary);
       }
       setFile(null);
       setPreview('');
@@ -160,9 +165,18 @@ const Upload = () => {
           </div>
         </div>
 
+        {summary && (
+          <div className="mt-8 bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">AI Summary & Explanation</h2>
+            <div className="prose prose-indigo max-w-none text-gray-800">
+              <ReactMarkdown>{summary}</ReactMarkdown>
+            </div>
+          </div>
+        )}
+
         {extractedText && (
           <div className="mt-8 bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Extracted Text (OCR)</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Extracted Text (Raw OCR)</h2>
             <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 whitespace-pre-wrap text-sm text-gray-700 max-h-96 overflow-y-auto">
               {extractedText}
             </div>
