@@ -1,6 +1,7 @@
 import cloudinary from '../config/cloudinary.js';
 import Report from '../models/Report.js';
 import fs from 'fs';
+import { extractText } from '../services/ocrService.js';
 
 // @desc    Upload a report
 // @route   POST /api/reports/upload
@@ -20,6 +21,9 @@ export const uploadReport = async (req, res) => {
     // Remove file from local storage after successful upload
     fs.unlinkSync(req.file.path);
 
+    // Run OCR / Text Extraction
+    const extractedText = await extractText(result.secure_url, req.file.mimetype);
+
     // Create Report in DB
     const report = await Report.create({
       user: req.user.id,
@@ -27,10 +31,11 @@ export const uploadReport = async (req, res) => {
       fileUrl: result.secure_url,
       cloudinaryId: result.public_id,
       fileType: req.file.mimetype,
+      ocrText: extractedText,
     });
 
     res.status(201).json({
-      message: 'File uploaded successfully',
+      message: 'File uploaded and text extracted successfully',
       report,
     });
   } catch (error) {
