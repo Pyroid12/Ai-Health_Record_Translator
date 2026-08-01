@@ -14,7 +14,22 @@ connectDB();
 const app = express();
 
 // Middleware
-app.use(cors());
+const allowedOrigins = [
+  'http://localhost:5173', // Vite dev server
+  process.env.FRONTEND_URL, // Production frontend (Vercel)
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (curl, Postman, server-to-server)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
