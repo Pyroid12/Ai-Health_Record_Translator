@@ -13,23 +13,44 @@ const generateToken = (id) => {
 // @access  Public
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, confirmPassword } = req.body;
 
     // Validation
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: 'Please provide all fields' });
+    if (!name || !email || !password || !confirmPassword) {
+      return res.status(400).json({ message: 'Please provide all required fields' });
+    }
+
+    // Name length
+    if (name.trim().length < 2) {
+      return res.status(400).json({ message: 'Name must be at least 2 characters long' });
+    }
+
+    // Password strength (8+ chars with letter + number)
+    if (password.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters long' });
+    }
+    const pwRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/;
+    if (!pwRegex.test(password)) {
+      return res
+        .status(400)
+        .json({ message: 'Password must contain at least one letter and one number' });
+    }
+
+    // Password match
+    if (password !== confirmPassword) {
+      return res.status(400).json({ message: 'Passwords do not match' });
     }
 
     // Check if user exists
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ email: email.trim().toLowerCase() });
     if (userExists) {
-      return res.status(400).json({ message: 'User already exists' });
+      return res.status(400).json({ message: 'User already exists with this email' });
     }
 
     // Create user
     const user = await User.create({
-      name,
-      email,
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
       password,
     });
 

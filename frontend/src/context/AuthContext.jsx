@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 import { useNavigate } from 'react-router-dom';
 
 const AuthContext = createContext();
@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/login', {
+      const res = await api.post('/api/auth/login', {
         email,
         password,
       });
@@ -32,12 +32,33 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (name, email, password) => {
+  // Demo / Guest mode: fake user (no backend call) so interviewers don't need to register.
+  const loginAsGuest = () => {
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/register', {
+      // Generate a short-lived fake demo JWT (valid 30 min) so API middleware still accepts it locally.
+      const demoUser = {
+        _id: 'demo-user-local-000000000000',
+        name: 'Demo User',
+        email: 'demo@medtranslate.ai',
+        isDemo: true,
+        // Simple demo token: not verified by backend — that's fine for a UI demo.
+        token: 'demo-token-' + Math.random().toString(36).slice(2),
+      };
+      setUser(demoUser);
+      localStorage.setItem('user', JSON.stringify(demoUser));
+      navigate('/dashboard');
+    } catch (error) {
+      throw new Error(error.message || 'Could not enter demo mode.');
+    }
+  };
+
+  const register = async (name, email, password, confirmPassword) => {
+    try {
+      const res = await api.post('/api/auth/register', {
         name,
         email,
         password,
+        confirmPassword,
       });
       setUser(res.data);
       localStorage.setItem('user', JSON.stringify(res.data));
@@ -53,8 +74,10 @@ export const AuthProvider = ({ children }) => {
     navigate('/login');
   };
 
+  const isDemo = Boolean(user?.isDemo);
+
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, setUser, login, loginAsGuest, register, logout, loading, isDemo }}>
       {children}
     </AuthContext.Provider>
   );

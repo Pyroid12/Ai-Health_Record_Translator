@@ -1,5 +1,5 @@
 import Tesseract from 'tesseract.js';
-import pdfParse from 'pdf-parse';
+import { PDFParse } from 'pdf-parse';
 import axios from 'axios';
 
 /**
@@ -29,8 +29,10 @@ export const extractTextFromPDF = async (fileUrl) => {
     const buffer = Buffer.from(response.data);
     
     // Parse PDF
-    const data = await pdfParse(buffer);
-    return data.text.trim();
+    const parser = new PDFParse({ data: buffer });
+    const result = await parser.getText();
+    await parser.destroy();
+    return result.text.trim();
   } catch (error) {
     console.error('PDF Extraction Error:', error);
     throw new Error('Failed to extract text from PDF');

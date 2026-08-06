@@ -25,6 +25,15 @@ export const uploadReport = async (req, res) => {
     // Run OCR / Text Extraction based on MimeType
     const extractedText = await extractText(result.secure_url, req.file.mimetype);
 
+    // Guard: if OCR couldn't find meaningful text, don't waste an AI call
+    // fabricating a summary out of nothing. Clean up the Cloudinary upload too.
+    if (!extractedText || extractedText.trim().length < 20) {
+      await cloudinary.uploader.destroy(result.public_id);
+      return res.status(400).json({
+        message: 'We couldn\'t find readable text in this file. Please make sure it\'s a clear photo or scan of a medical report (not a blank page, screenshot, or unrelated image), then try again.',
+      });
+    }
+
     // Generate AI Summary
     const aiSummary = await generateSummary(extractedText);
 

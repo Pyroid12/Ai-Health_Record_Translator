@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api/axios';
 import toast from 'react-hot-toast';
 import { Search, Trash2, FileText, Eye } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -19,7 +19,7 @@ const History = () => {
   const fetchReports = async () => {
     try {
       const token = JSON.parse(localStorage.getItem('user'))?.token;
-      const res = await axios.get('http://localhost:5000/api/reports', {
+      const res = await api.get('/api/reports', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setReports(res.data);
@@ -36,7 +36,7 @@ const History = () => {
     
     try {
       const token = JSON.parse(localStorage.getItem('user'))?.token;
-      await axios.delete(`http://localhost:5000/api/reports/${id}`, {
+      await api.delete(`/api/reports/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setReports(reports.filter(report => report._id !== id));
@@ -55,24 +55,24 @@ const History = () => {
     <DashboardLayout>
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-          <h1 className="text-2xl font-bold text-gray-900">Report History</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Report History</h1>
           
           <div className="relative w-full sm:w-64">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
+              <Search className="h-5 w-5 text-gray-400 dark:text-gray-500" />
             </div>
             <input
               type="text"
               placeholder="Search reports..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-900 placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             />
           </div>
         </div>
 
         {loading ? (
-          <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+          <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
             <ul className="divide-y divide-gray-200">
               {[1, 2, 3].map((skeleton) => (
                 <li key={skeleton} className="p-4">
@@ -94,10 +94,10 @@ const History = () => {
             </ul>
           </div>
         ) : filteredReports.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-            <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No reports found</h3>
-            <p className="text-gray-500">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
+            <FileText className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No reports found</h3>
+            <p className="text-gray-500 dark:text-gray-400">
               {searchTerm ? "No reports match your search." : "You haven't uploaded any medical reports yet."}
             </p>
             {!searchTerm && (
@@ -107,20 +107,20 @@ const History = () => {
             )}
           </div>
         ) : (
-          <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+          <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
             <ul className="divide-y divide-gray-200">
               {filteredReports.map((report) => (
-                <li key={report._id} className="p-4 hover:bg-gray-50 transition-colors">
+                <li key={report._id} className="p-4 hover:bg-gray-50 dark:bg-gray-800 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center min-w-0 flex-1">
                       <div className="flex-shrink-0 bg-indigo-100 rounded-lg p-3">
                         <FileText className="h-6 w-6 text-indigo-600" />
                       </div>
                       <div className="min-w-0 flex-1 px-4">
-                        <p className="text-sm font-medium text-gray-900 truncate">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                           {report.originalFileName}
                         </p>
-                        <p className="text-sm text-gray-500 flex items-center mt-1">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center mt-1">
                           Uploaded on {new Date(report.createdAt).toLocaleDateString()}
                         </p>
                       </div>

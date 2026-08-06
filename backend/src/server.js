@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import connectDB from './config/db.js';
 
 import authRoutes from './routes/authRoutes.js';
@@ -33,7 +34,32 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Rate limiters (anti brute-force / anti spam)
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10, // limit each IP to 10 register requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    message:
+      'Too many accounts created from this IP. Please try again after one hour.',
+  },
+});
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 15, // limit each IP to 15 login requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    message:
+      'Too many login attempts from this IP. Please try again after 15 minutes.',
+  },
+});
+
 // Routes
+app.use('/api/auth/register', registerLimiter);
+app.use('/api/auth/login', loginLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/reports', reportRoutes);
 

@@ -5,6 +5,37 @@ dotenv.config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+// Small delay helper
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Call Gemini with automatic retry on transient errors (503 overloaded, 429 rate limit).
+ * Uses exponential backoff: 1s, 2s, 4s between attempts.
+ * @param {Function} fn - Async function that performs the Gemini call
+ * @param {number} maxRetries - Max number of retry attempts
+ */
+const withRetry = async (fn, maxRetries = 3) => {
+  let lastError;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      const status = error?.status || error?.httpStatus;
+      const isRetryable = status === 503 || status === 429;
+
+      if (!isRetryable || attempt === maxRetries) {
+        throw error;
+      }
+
+      const delayMs = 1000 * Math.pow(2, attempt); // 1s, 2s, 4s
+      console.warn(`Gemini call failed (status ${status}), retrying in ${delayMs}ms... (attempt ${attempt + 1}/${maxRetries})`);
+      await sleep(delayMs);
+    }
+  }
+  throw lastError;
+};
+
 /**
  * Generate an easy English explanation from OCR text
  * @param {string} ocrText - The extracted text from the medical report
@@ -12,13 +43,18 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
  */
 export const generateSummary = async (ocrText) => {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro-latest' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
 
     const prompt = `
 You are an expert medical assistant AI. Your task is to translate complex medical reports into easy-to-understand English for a patient.
 CRITICAL: You must NEVER diagnose a disease. Always include a medical disclaimer stating this is for educational purposes and they must consult a doctor.
 
-Read the following medical report text and provide a structured summary using EXACTLY these headings:
+FIRST, check whether the text below actually looks like a medical report, lab result, prescription, or clinical document (e.g. it should contain things like test names, values, units, patient/doctor information, diagnoses, or medication details).
+
+If it does NOT look like a medical document (for example, it's random text, an unrelated document, gibberish/OCR noise, or nearly empty), respond with ONLY this exact message and nothing else:
+"This doesn't appear to be a medical report. Please upload a clear photo or scan of a lab result, prescription, or clinical document, and try again."
+
+If it DOES look like a medical document, provide a structured summary using EXACTLY these headings:
 
 1. Patient Summary: (A brief overview of who the report is for and what the test is)
 2. Important Findings: (Key results from the report in simple terms)
@@ -34,12 +70,15 @@ ${ocrText}
 """
     `;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
+    const response = await withRetry(async () => {
+      const result = await model.generateContent(prompt);
+      return await result.response;
+    });
+
     return response.text();
   } catch (error) {
     console.error('Gemini API Error:', error);
-    throw new Error('Failed to generate summary from AI');
+    throw new Error('Failed to generate summary from AI. The AI service may be temporarily busy — please try again in a moment.');
   }
 };
 
@@ -51,7 +90,7 @@ ${ocrText}
  */
 export const translateSummary = async (englishSummary, targetLanguage) => {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro-latest' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
 
     const prompt = `
 You are an expert medical translator. Translate the following medical report summary into ${targetLanguage}.
@@ -67,11 +106,14 @@ ${englishSummary}
 """
     `;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
+    const response = await withRetry(async () => {
+      const result = await model.generateContent(prompt);
+      return await result.response;
+    });
+
     return response.text();
   } catch (error) {
     console.error('Gemini Translation Error:', error);
-    throw new Error('Failed to translate summary');
+    throw new Error('Failed to translate summary. The AI service may be temporarily busy — please try again in a moment.');
   }
 };
