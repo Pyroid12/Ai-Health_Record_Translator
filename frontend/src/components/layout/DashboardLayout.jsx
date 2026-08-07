@@ -2,6 +2,7 @@ import { useState, useContext, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Sparkles, X } from 'lucide-react';
 import Sidebar from './Sidebar';
+import MobileTabBar from './MobileTabBar';
 import Navbar from './Navbar';
 import ProfileDrawer from './ProfileDrawer';
 import NotificationsPanel from './NotificationsPanel';
@@ -76,11 +77,16 @@ const DashboardLayout = ({ children }) => {
           onNotificationsClick={() => setNotificationsOpen((v) => !v)}
           unreadCount={unreadCount}
         />
-        <main className={`flex-1 pb-8 ${isDemo && demoBannerDismissed ? 'mt-6' : isDemo ? 'mt-4' : 'mt-6'}`}>
+        <main className={`flex-1 pb-8 md:pb-8 pb-28 ${isDemo && demoBannerDismissed ? 'mt-6' : isDemo ? 'mt-4' : 'mt-6'}`}>
           <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
             {children}
           </div>
         </main>
+
+        {/* Mobile Bottom Tab Bar (shows < md screens) */}
+        <div className="md:hidden fixed bottom-0 inset-x-0 z-40 pb-[env(safe-area-inset-bottom)]">
+          <MobileTabBar />
+        </div>
       </div>
 
       <ProfileDrawer open={profileOpen} onClose={() => setProfileOpen(false)} />
