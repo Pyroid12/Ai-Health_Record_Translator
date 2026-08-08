@@ -76,10 +76,49 @@ const ReportDetail = () => {
 
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-      pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 10; // mm margin on all sides
+      const usableWidth = pageWidth - margin * 2;
+      const usableHeight = pageHeight - margin * 2;
+
+      // Scale factor from canvas pixels -> mm, based on fitting the image to usableWidth
+      const imgWidthMm = usableWidth;
+      const imgHeightMm = (canvas.height * imgWidthMm) / canvas.width;
+
+      // How many canvas pixels correspond to one page's worth of height
+      const pageHeightInCanvasPx = (usableHeight * canvas.width) / usableWidth;
+
+      let renderedHeightPx = 0;
+      let isFirstPage = true;
+
+      while (renderedHeightPx < canvas.height) {
+        const sliceHeightPx = Math.min(pageHeightInCanvasPx, canvas.height - renderedHeightPx);
+
+        // Draw this slice onto a temporary canvas
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sliceHeightPx;
+        const ctx = pageCanvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+        ctx.drawImage(
+          canvas,
+          0, renderedHeightPx, canvas.width, sliceHeightPx,
+          0, 0, canvas.width, sliceHeightPx
+        );
+
+        const pageImgData = pageCanvas.toDataURL('image/png');
+        const sliceHeightMm = (sliceHeightPx * imgWidthMm) / canvas.width;
+
+        if (!isFirstPage) pdf.addPage();
+        pdf.addImage(pageImgData, 'PNG', margin, margin, imgWidthMm, sliceHeightMm);
+
+        renderedHeightPx += sliceHeightPx;
+        isFirstPage = false;
+      }
+
       pdf.save(`Medical_Report_${language}.pdf`);
       toast.success('PDF downloaded successfully');
     } catch (error) {
