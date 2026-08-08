@@ -12,7 +12,7 @@ const Landing = () => {
   const handleGuestLogin = async () => {
     setGuestLoading(true);
     try {
-      loginAsGuest();
+      await loginAsGuest();
       toast.success('Welcome to Demo Mode! Sample reports are pre-loaded.');
       setTimeout(() => navigate('/dashboard'), 300);
     } catch (err) {

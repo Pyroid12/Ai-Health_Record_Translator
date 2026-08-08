@@ -32,23 +32,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Demo / Guest mode: fake user (no backend call) so interviewers don't need to register.
-  const loginAsGuest = () => {
+  // Demo / Guest mode: gets a real JWT from the backend for a shared demo account,
+  // so protected routes (like upload) work exactly like a real login.
+  const loginAsGuest = async () => {
     try {
-      // Generate a short-lived fake demo JWT (valid 30 min) so API middleware still accepts it locally.
-      const demoUser = {
-        _id: 'demo-user-local-000000000000',
-        name: 'Demo User',
-        email: 'demo@medtranslate.ai',
-        isDemo: true,
-        // Simple demo token: not verified by backend — that's fine for a UI demo.
-        token: 'demo-token-' + Math.random().toString(36).slice(2),
-      };
-      setUser(demoUser);
-      localStorage.setItem('user', JSON.stringify(demoUser));
+      const res = await api.post('/api/auth/guest');
+      setUser(res.data);
+      localStorage.setItem('user', JSON.stringify(res.data));
       navigate('/dashboard');
     } catch (error) {
-      throw new Error(error.message || 'Could not enter demo mode.');
+      throw new Error(error.response?.data?.message || 'Could not enter demo mode.');
     }
   };
 

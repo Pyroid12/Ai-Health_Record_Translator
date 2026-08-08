@@ -99,6 +99,36 @@ export const loginUser = async (req, res) => {
   }
 };
 
+// @desc    Log in as demo/guest user (finds or creates a fixed demo account)
+// @route   POST /api/auth/guest
+// @access  Public
+export const guestLogin = async (req, res) => {
+  try {
+    const demoEmail = 'demo@medtranslate.ai';
+
+    let user = await User.findOne({ email: demoEmail });
+
+    if (!user) {
+      user = await User.create({
+        name: 'Demo User',
+        email: demoEmail,
+        // Fixed internal password; demo users never log in with it directly.
+        password: process.env.DEMO_USER_PASSWORD || 'DemoPass123!',
+      });
+    }
+
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      isDemo: true,
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Get user data
 // @route   GET /api/auth/me
 // @access  Private
